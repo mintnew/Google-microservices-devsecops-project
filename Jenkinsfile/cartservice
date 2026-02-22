@@ -28,14 +28,25 @@ pipeline {
             steps {
                 dir('src/cartservice') {
                     withSonarQubeEnv('sonar-server') {
-                        sh '''
-                        dotnet tool install --global dotnet-sonarscanner || true
-                        export PATH="$PATH:$HOME/.dotnet/tools"
+                       sh '''
+  set -e
 
-                        dotnet sonarscanner begin /k:"cartservice" /d:sonar.host.url=$SONAR_HOST_URL /d:sonar.login=$SONAR_AUTH_TOKEN
-                        dotnet build
-                        dotnet sonarscanner end /d:sonar.login=$SONAR_AUTH_TOKEN
-                        '''
+  echo "Checking dotnet..."
+  if ! command -v dotnet >/dev/null 2>&1; then
+    echo "ERROR: dotnet not found on this Jenkins agent."
+    echo "Fix: install .NET SDK on the agent OR run this stage inside a dotnet SDK docker image."
+    exit 1
+  fi
+
+  dotnet --version
+
+  dotnet tool install --global dotnet-sonarscanner || dotnet tool update --global dotnet-sonarscanner
+  export PATH="$PATH:$HOME/.dotnet/tools"
+
+  dotnet sonarscanner begin /k:"cartservice" /d:sonar.host.url="${SONAR_HOST_URL}" /d:sonar.login="${SONAR_AUTH_TOKEN}"
+  dotnet build --no-incremental
+  dotnet sonarscanner end /d:sonar.login="${SONAR_AUTH_TOKEN}"
+'''
                     }
                 }
             }
