@@ -1,11 +1,5 @@
 pipeline {
     agent any
-
-    tools {
-        // .NET SDK should be installed in Jenkins global tools config
-        dotnetsdk 'dotnet9'
-    }
-
     environment {
         SCANNER_HOME = tool 'sonar-scanner'
         DOCKER_NAME  = 'saurabh0019/cartservice'
