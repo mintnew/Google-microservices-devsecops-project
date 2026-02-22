@@ -25,24 +25,24 @@ pipeline {
 
         // --- SAST: SonarQube for C# ---
         stage("SonarQube Analysis") {
-  agent {
-    docker {
-      image 'mcr.microsoft.com/dotnet/sdk:8.0'
-      args  '-u root:root'   // optional; helps avoid permission issues in workspace
+          agent {
+            docker {
+               image 'mcr.microsoft.com/dotnet/sdk:8.0'
+               args  '-u root:root'   // optional; helps avoid permission issues in workspace
     }
   }
 
-  environment {
-    // Optional: if you want to hardcode key/name
-    SONAR_PROJECT_KEY = "cartservice"
+          environment {
+                     // Optional: if you want to hardcode key/name
+           SONAR_PROJECT_KEY = "cartservice"
   }
 
-  steps {
-    dir('src/cartservice') {
-      withSonarQubeEnv('sonar-server') {
+          steps {
+           dir('src/cartservice') {
+            withSonarQubeEnv('sonar-server') {
 
-        // Best: use Jenkins credentials for the token
-        withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_AUTH_TOKEN')]) {
+            // Best: use Jenkins credentials for the token
+            withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_AUTH_TOKEN')]) {
 
           sh '''
             set -e
