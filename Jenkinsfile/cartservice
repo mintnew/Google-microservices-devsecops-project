@@ -89,39 +89,43 @@ pipeline {
             sh '''
         set -e
 
-        # ---- Config ----
         DC_VERSION="10.0.4"
-        DC_DIR="$WORKSPACE/.tools/dependency-check"
+        TOOLS_DIR="$WORKSPACE/.tools"
+        DC_HOME="$TOOLS_DIR/dependency-check"
         DC_ZIP="dependency-check-${DC_VERSION}-release.zip"
         DC_URL="https://github.com/jeremylong/DependencyCheck/releases/download/v${DC_VERSION}/${DC_ZIP}"
 
+        echo "=== Checking required commands (wget/unzip) ==="
+        command -v wget >/dev/null 2>&1 || { echo "ERROR: wget not found. Install it once on agent: sudo apt-get install -y wget"; exit 1; }
+        command -v unzip >/dev/null 2>&1 || { echo "ERROR: unzip not found. Install it once on agent: sudo apt-get install -y unzip"; exit 1; }
+
+        mkdir -p "$TOOLS_DIR"
+
         echo "=== Installing Dependency-Check CLI (if not present) ==="
-        mkdir -p "$WORKSPACE/.tools"
-        if [ ! -d "$DC_DIR" ]; then
-          sudo apt-get update -y
-          sudo apt-get install -y unzip wget
-          wget -q "$DC_URL" -O "$WORKSPACE/.tools/$DC_ZIP"
-          unzip -q "$WORKSPACE/.tools/$DC_ZIP" -d "$WORKSPACE/.tools"
-          mv "$WORKSPACE/.tools/dependency-check" "$DC_DIR" || true
+        if [ ! -x "$DC_HOME/bin/dependency-check.sh" ]; then
+          rm -f "$TOOLS_DIR/$DC_ZIP"
+          wget -q "$DC_URL" -O "$TOOLS_DIR/$DC_ZIP"
+          rm -rf "$DC_HOME"
+          unzip -q "$TOOLS_DIR/$DC_ZIP" -d "$TOOLS_DIR"
+          mv "$TOOLS_DIR/dependency-check" "$DC_HOME"
+          chmod +x "$DC_HOME/bin/dependency-check.sh"
         fi
 
-        chmod +x "$DC_DIR/bin/dependency-check.sh"
-
         echo "=== Running Dependency-Check ==="
-        "$DC_DIR/bin/dependency-check.sh" \
+        "$DC_HOME/bin/dependency-check.sh" \
           --project "cartservice" \
           --scan . \
           --format XML \
           --out .
 
-        echo "Dependency-Check report generated:"
+        echo "=== Report generated ==="
         ls -l dependency-check-report.xml
       '''
     }
   }
-       post {
-        always {
-         archiveArtifacts artifacts: 'src/cartservice/dependency-check-report.xml', allowEmptyArchive: true
+  post {
+    always {
+      archiveArtifacts artifacts: 'src/cartservice/dependency-check-report.xml', allowEmptyArchive: true
     }
   }
 }
