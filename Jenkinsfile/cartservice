@@ -25,32 +25,50 @@ pipeline {
 
         // --- SAST: SonarQube for C# ---
         stage("SonarQube Analysis") {
-            steps {
-                dir('src/cartservice') {
-                    withSonarQubeEnv('sonar-server') {
-                       sh '''
-  set -e
+  agent {
+    docker {
+      image 'mcr.microsoft.com/dotnet/sdk:8.0'
+      args  '-u root:root'   // optional; helps avoid permission issues in workspace
+    }
+  }
 
-  echo "Checking dotnet..."
-  if ! command -v dotnet >/dev/null 2>&1; then
-    echo "ERROR: dotnet not found on this Jenkins agent."
-    echo "Fix: install .NET SDK on the agent OR run this stage inside a dotnet SDK docker image."
-    exit 1
-  fi
+  environment {
+    // Optional: if you want to hardcode key/name
+    SONAR_PROJECT_KEY = "cartservice"
+  }
 
-  dotnet --version
+  steps {
+    dir('src/cartservice') {
+      withSonarQubeEnv('sonar-server') {
 
-  dotnet tool install --global dotnet-sonarscanner || dotnet tool update --global dotnet-sonarscanner
-  export PATH="$PATH:$HOME/.dotnet/tools"
+        // Best: use Jenkins credentials for the token
+        withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_AUTH_TOKEN')]) {
 
-  dotnet sonarscanner begin /k:"cartservice" /d:sonar.host.url="${SONAR_HOST_URL}" /d:sonar.login="${SONAR_AUTH_TOKEN}"
-  dotnet build --no-incremental
-  dotnet sonarscanner end /d:sonar.login="${SONAR_AUTH_TOKEN}"
-'''
-                    }
-                }
-            }
+          sh '''
+            set -e
+
+            echo "Dotnet version:"
+            dotnet --version
+
+            # Install/Update scanner
+            dotnet tool install --global dotnet-sonarscanner || dotnet tool update --global dotnet-sonarscanner
+            export PATH="$PATH:$HOME/.dotnet/tools"
+
+            echo "Running SonarScanner..."
+            dotnet sonarscanner begin \
+              /k:"${SONAR_PROJECT_KEY}" \
+              /d:sonar.host.url="${SONAR_HOST_URL}" \
+              /d:sonar.login="${SONAR_AUTH_TOKEN}"
+
+            dotnet build --no-incremental
+
+            dotnet sonarscanner end /d:sonar.login="${SONAR_AUTH_TOKEN}"
+          '''
         }
+      }
+    }
+  }
+}
 
         // --- Quality Gate ---
         stage("Quality Gate") {
