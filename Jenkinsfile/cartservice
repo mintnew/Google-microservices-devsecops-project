@@ -25,44 +25,35 @@ pipeline {
 
         // --- SAST: SonarQube for C# ---
         stage("SonarQube Analysis") {
-          agent {
-            docker {
-               image 'mcr.microsoft.com/dotnet/sdk:8.0'
-               args  '-u root:root'   // optional; helps avoid permission issues in workspace
-    }
-  }
-
-          environment {
-                     // Optional: if you want to hardcode key/name
-           SONAR_PROJECT_KEY = "cartservice"
-  }
-
-          steps {
-           dir('src/cartservice') {
-            withSonarQubeEnv('sonar-server') {
-
-            // Best: use Jenkins credentials for the token
-            withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_AUTH_TOKEN')]) {
-
-          sh '''
+          agent any   // or agent { label 'your-dotnet-node' } if you have a dotnet-enabled agent
+            steps {
+             dir('src/cartservice') {
+               withSonarQubeEnv('sonar-server') {
+                withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_AUTH_TOKEN')]) {
+             sh '''
             set -e
 
-            echo "Dotnet version:"
+            echo "Checking dotnet on agent..."
+            if ! command -v dotnet >/dev/null 2>&1; then
+              echo "ERROR: dotnet not found on this Jenkins agent."
+              echo "FIX: Install .NET SDK on this agent OR run this job on a node that has dotnet."
+              exit 1
+            fi
+
             dotnet --version
 
-            # Install/Update scanner
+            # Install/update sonarscanner
             dotnet tool install --global dotnet-sonarscanner || dotnet tool update --global dotnet-sonarscanner
             export PATH="$PATH:$HOME/.dotnet/tools"
 
-            echo "Running SonarScanner..."
             dotnet sonarscanner begin \
-              /k:"${SONAR_PROJECT_KEY}" \
-              /d:sonar.host.url="${SONAR_HOST_URL}" \
-              /d:sonar.login="${SONAR_AUTH_TOKEN}"
+              /k:"cartservice" \
+              /d:sonar.host.url="$SONAR_HOST_URL" \
+              /d:sonar.login="$SONAR_AUTH_TOKEN"
 
             dotnet build --no-incremental
 
-            dotnet sonarscanner end /d:sonar.login="${SONAR_AUTH_TOKEN}"
+            dotnet sonarscanner end /d:sonar.login="$SONAR_AUTH_TOKEN"
           '''
         }
       }
