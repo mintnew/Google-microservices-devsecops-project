@@ -95,14 +95,15 @@ pipeline {
                     dependencyCheck additionalArguments: ''' 
                         --scan ./ 
                         --format XML 
-                        --out dependency-check-report.xml 
+                        --out .
+                        --project "cartservice" 
                     ''',
                     odcInstallation: 'dp-check'
                 }
             }
             post {
                 always {
-                    archiveArtifacts 'src/cartservice/dependency-check-report.xml'
+                    archiveArtifacts artifacts: 'src/cartservice/dependency-check-report.xml', allowEmptyArchive: true
                 }
             }
         }
