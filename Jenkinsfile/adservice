@@ -8,7 +8,7 @@ pipeline {
 
     environment {
         
-        DOCKER_NAME  = 'harishnshetty/adservice'
+        DOCKER_NAME  = 'saurabh0019/adservice'
         IMAGE_NAME   = 'adservice'
     }
 
@@ -19,7 +19,7 @@ pipeline {
 
         stage("Git Checkout") {
             steps {
-                git branch: 'main', url: 'https://github.com/harishnshetty/Google-microservices-devsecops-project.git'
+                git branch: 'main', url: 'https://github.com/mintnew/Google-microservices-devsecops-project.git'
             }
         }
 
@@ -62,7 +62,7 @@ pipeline {
                 dir('src/adservice') {
                     withCredentials([string(credentialsId: 'docker-cred', variable: 'dockerpwd')]) {
                         sh '''
-                        docker login -u harishnshetty -p ${dockerpwd}
+                        docker login -u saurabh0019 -p ${dockerpwd}
                         docker push ${IMAGE_TAG}
                         docker tag ${IMAGE_NAME} ${DOCKER_NAME}:latest
                         docker push ${DOCKER_NAME}:latest
@@ -109,8 +109,8 @@ pipeline {
                             <p>Started by: ${buildUser}</p>
                             <p>Build URL: <a href="${env.BUILD_URL}">${env.BUILD_URL}</a></p>
                         """,
-                        to: 'harishn662@gmail.com',
-                        from: 'harishn662@gmail.com',
+                        to: 'chanchlesh.kothe17@gmail.com',
+                        from: 'youngspider7@gmail.com',
                         mimeType: 'text/html',
                         attachmentsPattern: 'dependency-check-report.xml,trivy-fs-report.txt,trivy-image-ad.json,trivy-image-ad.txt'
                     )
