@@ -84,23 +84,47 @@ pipeline {
 
         // --- Dependency Check (SCA) ---
         stage("Dependency Check") {
-            steps {
-                dir('src/cartservice') {
-                    dependencyCheck additionalArguments: ''' 
-                        --scan ./ 
-                        --format XML 
-                        --out .
-                        --project "cartservice" 
-                    ''',
-                    odcInstallation: 'dp-check'
-                }
-            }
-            post {
-                always {
-                    archiveArtifacts artifacts: 'src/cartservice/dependency-check-report.xml', allowEmptyArchive: true
-                }
-            }
-        }
+          steps {
+           dir('src/cartservice') {
+            sh '''
+        set -e
+
+        # ---- Config ----
+        DC_VERSION="10.0.4"
+        DC_DIR="$WORKSPACE/.tools/dependency-check"
+        DC_ZIP="dependency-check-${DC_VERSION}-release.zip"
+        DC_URL="https://github.com/jeremylong/DependencyCheck/releases/download/v${DC_VERSION}/${DC_ZIP}"
+
+        echo "=== Installing Dependency-Check CLI (if not present) ==="
+        mkdir -p "$WORKSPACE/.tools"
+        if [ ! -d "$DC_DIR" ]; then
+          sudo apt-get update -y
+          sudo apt-get install -y unzip wget
+          wget -q "$DC_URL" -O "$WORKSPACE/.tools/$DC_ZIP"
+          unzip -q "$WORKSPACE/.tools/$DC_ZIP" -d "$WORKSPACE/.tools"
+          mv "$WORKSPACE/.tools/dependency-check" "$DC_DIR" || true
+        fi
+
+        chmod +x "$DC_DIR/bin/dependency-check.sh"
+
+        echo "=== Running Dependency-Check ==="
+        "$DC_DIR/bin/dependency-check.sh" \
+          --project "cartservice" \
+          --scan . \
+          --format XML \
+          --out .
+
+        echo "Dependency-Check report generated:"
+        ls -l dependency-check-report.xml
+      '''
+    }
+  }
+       post {
+        always {
+         archiveArtifacts artifacts: 'src/cartservice/dependency-check-report.xml', allowEmptyArchive: true
+    }
+  }
+}
 
         // --- Trivy FS Scan ---
         stage("Trivy File Scan") {
