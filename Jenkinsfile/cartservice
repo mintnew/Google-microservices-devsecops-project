@@ -89,7 +89,7 @@ pipeline {
             sh '''
         set -e
 
-        DC_VERSION="10.0.4"
+        DC_VERSION="12.2.0"
         TOOLS_DIR="$WORKSPACE/.tools"
         DC_HOME="$TOOLS_DIR/dependency-check"
         TMP_DIR="$TOOLS_DIR/dc-tmp"
@@ -125,6 +125,7 @@ pipeline {
           --scan . \
           --format XML \
           --out .
+          --noupdate
 
         echo "=== Report generated ==="
         ls -l dependency-check-report.xml
