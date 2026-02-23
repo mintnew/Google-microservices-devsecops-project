@@ -129,7 +129,6 @@ pipeline {
           --scan . \
           --format XML \
           --out . \
-          --noupdate
 
         echo "=== Report generated ==="
         ls -l dependency-check-report.xml
