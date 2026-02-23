@@ -86,7 +86,7 @@ pipeline {
         stage("Dependency Check") {
           steps {
            dir('src/cartservice') {
-            sh '''
+              sh '''
         set -e
 
         DC_VERSION="12.2.0"
@@ -94,7 +94,9 @@ pipeline {
         DC_HOME="$TOOLS_DIR/dependency-check"
         TMP_DIR="$TOOLS_DIR/dc-tmp"
         DC_ZIP="dependency-check-${DC_VERSION}-release.zip"
-        DC_URL="https://github.com/jeremylong/DependencyCheck/releases/download/v${DC_VERSION}/${DC_ZIP}"
+
+        # ✅ FIX: correct repo + redirects
+        DC_URL="https://github.com/dependency-check/DependencyCheck/releases/download/v${DC_VERSION}/${DC_ZIP}"
 
         echo "=== Checking required commands (wget/unzip) ==="
         command -v wget >/dev/null 2>&1 || { echo "ERROR: wget not found. Install it once on agent: sudo apt-get install -y wget"; exit 1; }
@@ -105,7 +107,9 @@ pipeline {
         echo "=== Installing Dependency-Check CLI (if not present) ==="
         if [ ! -x "$DC_HOME/bin/dependency-check.sh" ]; then
           rm -f "$TOOLS_DIR/$DC_ZIP"
-          wget -q "$DC_URL" -O "$TOOLS_DIR/$DC_ZIP"
+
+          echo "Downloading: $DC_URL"
+          wget -L "$DC_URL" -O "$TOOLS_DIR/$DC_ZIP"
 
           rm -rf "$TMP_DIR" "$DC_HOME"
           mkdir -p "$TMP_DIR"
@@ -124,7 +128,7 @@ pipeline {
           --project "cartservice" \
           --scan . \
           --format XML \
-          --out .
+          --out . \
           --noupdate
 
         echo "=== Report generated ==="
